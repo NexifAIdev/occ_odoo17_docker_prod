@@ -1,0 +1,26 @@
+{
+  "name": "Odoo 17",
+  "dockerComposeFile": "docker-compose.yaml",
+  "service": "web",
+  "workspaceFolder": "/workspace",
+  "postCreateCommand": "[ -L ${WORKSPACE_FOLDER}/odoo ] || ln -sf /usr/lib/python3/dist-packages/odoo ${WORKSPACE_FOLDER}/odoo",
+  "remoteUser": "root",
+  "containerUser": "root",
+  "containerEnv": {
+    "WORKSPACE_FOLDER": "${containerWorkspaceFolder}"
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-python.autopep8",
+        "ms-python.isort",
+        "trinhanhngoc.vscode-odoo",
+        "eamodio.gitlens",
+        "mechatroner.rainbow-csv"
+      ],
+      "settings": {
+        "extensions.verifySignature": false
+      }
+    }
+  }
+}

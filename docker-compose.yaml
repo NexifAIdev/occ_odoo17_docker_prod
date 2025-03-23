@@ -1,0 +1,48 @@
+services:
+  web:
+    build:
+      context: ./odoo
+      dockerfile: Dockerfile
+    container_name: odoo17-web
+    volumes:
+      - ./odoo/outputs:/workspace/outputs
+      - ./odoo/addons:/workspace/addons 
+      - ./odoo/src:/workspace
+      - ./odoo/config:/etc/odoo 
+      - ./filestore:/var/lib/odoo/.local/share/Odoo 
+
+    ports:
+      - "8069:8069"
+      - "8072:8072"
+    depends_on:
+      - db
+    environment:
+      - DEBUGPY_PORT=5678
+
+  db:
+    image: postgres:13
+    container_name: odoo17-db
+    restart: always
+    environment:
+      - POSTGRES_DB=postgres_clean
+      - POSTGRES_DB=postgres
+      - POSTGRES_USER=odoo
+      - POSTGRES_PASSWORD=odoo
+      - PGDATA=/var/lib/postgresql/data/pgdata
+    volumes:
+      - db-data:/var/lib/postgresql/data/pgdata
+
+  tomcat:
+    build:
+      context: ./tomcat
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./tomcat/webapps:/opt/tomcat/webapps
+    tty: true
+    stdin_open: true
+    command: sh -c "catalina.sh run && tail -f /dev/null"
+
+volumes:
+  odoo-filestore:
+  db-data:
