@@ -12,7 +12,7 @@ RUN apt-get update && apt-get install -y curl && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Copy custom configuration or WAR files (optional)
-COPY config/ /opt/tomcat/conf/
+# COPY config/ /opt/tomcat/conf/
 COPY webapps/ /opt/tomcat/webapps/
 
 # Expose Tomcat port
