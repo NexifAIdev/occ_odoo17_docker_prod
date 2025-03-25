@@ -5,9 +5,9 @@ services:
       dockerfile: Dockerfile
     container_name: odoo17-web
     volumes:
-      - ./odoo/outputs:/workspace/outputs
-      - ./odoo/addons:/workspace/addons 
-      - ./odoo/src:/workspace
+      - ./odoo/outputs:/odoo/outputs
+      - ./odoo/addons:/odoo/addons 
+      - ./odoo/src:/odoo
       - ./odoo/config:/etc/odoo 
       - ./filestore:/var/lib/odoo/.local/share/Odoo 
 

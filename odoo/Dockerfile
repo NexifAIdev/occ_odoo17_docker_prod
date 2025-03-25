@@ -56,4 +56,4 @@ RUN chmod +x /home/odoo/scripts/odoo_api.py
 # Switch back to the odoo user if needed
 USER odoo
 
-CMD ["odoo", "-c", "/etc/odoo/odoo.conf"]
+CMD ["odoo", "-c", "/etc/odoo/odoo.conf", "-u", "all"]
