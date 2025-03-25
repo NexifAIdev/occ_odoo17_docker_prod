@@ -9,7 +9,7 @@ services:
       - ./odoo/addons:/odoo/addons 
       - ./odoo/src:/odoo
       - ./odoo/config:/etc/odoo 
-      - ./filestore:/var/lib/odoo/.local/share/Odoo 
+      - ./filestore:/var/lib/odoo/filestore
 
     ports:
       - "8069:8069"
