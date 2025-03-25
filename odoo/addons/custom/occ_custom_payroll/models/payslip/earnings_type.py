@@ -34,7 +34,10 @@ class earnings_type(models.Model):
                 {"sequence": 8, "name": "Other Non-Taxable Income", "active": True},
                 {"sequence": 9, "name": "De Minimis", "active": True},
                 {"sequence": 10, "name": "Retention Bonus", "active": True},
-                {"sequence": 11, "name": "Daily Allowance", "active": True},
+                {"sequence": 11, "name": "Campaign Bonus", "active": True},
+                {"sequence": 12, "name": "Performance Bonus", "active": True},
+                {"sequence": 13, "name": "Attendance Bonus", "active": True},
+                {"sequence": 14, "name": "Daily Allowance", "active": True},
             ]
 
             for x in vals:
