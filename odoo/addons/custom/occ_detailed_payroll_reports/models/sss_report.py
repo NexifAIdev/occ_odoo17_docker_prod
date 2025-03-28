@@ -441,7 +441,7 @@ class SSSReport(models.TransientModel):
                     ROUND(sss.er_ec_amount::NUMERIC,2) AS sss_ec_share,			   -- 8
                     ROUND(sss.ee_regular_amount::NUMERIC,2) AS sss_er_share,	   -- 9
                     0.00 AS sss_whisper, 										   -- 10
-                    he.sss_no AS sss_no      									   -- 11
+                    COALESCE(he.sss_no, '') AS sss_no      									   -- 11
 
                 FROM exhr_payslip ep
                 LEFT JOIN hr_employee he ON he.id = ep.employee_id
@@ -478,7 +478,7 @@ class SSSReport(models.TransientModel):
                     ROUND(sss.er_ec_amount::NUMERIC,2) AS sss_ec_share,			   -- 8
                     ROUND(sss.ee_regular_amount::NUMERIC,2) AS sss_er_share,	   -- 9
                     0.00 AS sss_whisper, 										   -- 10
-                    he.sss_no AS sss_no,      									   -- 11
+                    COALESCE(he.sss_no, '') AS sss_no,      									   -- 11
                     he.employee_id AS emp_id                                       -- 12
 
                 FROM exhr_payslip ep
@@ -516,7 +516,7 @@ class SSSReport(models.TransientModel):
                     ROUND(sss.er_ec_amount::NUMERIC,2) AS sss_ec_share,			   -- 8
                     ROUND(sss.ee_regular_amount::NUMERIC,2) AS sss_er_share,	   -- 9
                     0.00 AS sss_whisper, 										   -- 10
-                    he.sss_no AS sss_no      									   -- 11
+                    COALESCE(he.sss_no, '') AS sss_no      									   -- 11
 
                 FROM exhr_payslip ep
                 LEFT JOIN hr_employee he ON he.id = ep.employee_id
@@ -553,7 +553,7 @@ class SSSReport(models.TransientModel):
                     ROUND(sss.er_ec_amount::NUMERIC,2) AS sss_ec_share,			   -- 8
                     ROUND(sss.ee_regular_amount::NUMERIC,2) AS sss_er_share,	   -- 9
                     0.00 AS sss_whisper, 										   -- 10
-                    he.sss_no AS sss_no      									   -- 11
+                    COALESCE(he.sss_no, '') AS sss_no      									   -- 11
 
                 FROM exhr_payslip ep
                 LEFT JOIN hr_employee he ON he.id = ep.employee_id

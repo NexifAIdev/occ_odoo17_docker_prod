@@ -429,7 +429,7 @@ class PagIbigReport(models.TransientModel):
                     rc.name AS company,                                            -- 5
                     ROUND(phic.er_amount::NUMERIC,2) AS phic,					   -- 6
                     ROUND(phic.er_amount::NUMERIC,2) AS phic_er_share,			   -- 7
-                    he.philhealth_no AS philhealth_no      						   -- 8
+                    COALESCE(he.philhealth_no, '') AS philhealth_no      						   -- 8
 
                 FROM exhr_payslip ep
                 LEFT JOIN hr_employee he ON he.id = ep.employee_id
@@ -498,7 +498,7 @@ class PagIbigReport(models.TransientModel):
                     rc.name AS company,                                            -- 5
                     ROUND(phic.er_amount::NUMERIC,2) AS phic,					   -- 6
                     ROUND(phic.er_amount::NUMERIC,2) AS phic_er_share,			   -- 7
-                    he.philhealth_no AS philhealth_no      						   -- 8
+                    COALESCE(he.philhealth_no, '') AS philhealth_no      						   -- 8
 
                 FROM exhr_payslip ep
                 LEFT JOIN hr_employee he ON he.id = ep.employee_id
@@ -532,7 +532,7 @@ class PagIbigReport(models.TransientModel):
                     rc.name AS company,                                            -- 5
                     ROUND(phic.er_amount::NUMERIC,2) AS phic,					   -- 6
                     ROUND(phic.er_amount::NUMERIC,2) AS phic_er_share,			   -- 7
-                    he.philhealth_no AS philhealth_no      						   -- 8
+                    COALESCE(he.philhealth_no, '') AS philhealth_no      						   -- 8
 
                 FROM exhr_payslip ep
                 LEFT JOIN hr_employee he ON he.id = ep.employee_id
