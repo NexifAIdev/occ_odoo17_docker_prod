@@ -1,4 +1,4 @@
-name: Deploy Test
+name: CI/CD Deploy to DigitalOcean
 
 on:
   push:
@@ -6,8 +6,29 @@ on:
       - main
 
 jobs:
-  echo:
+  deploy:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Say Hello
-        run: echo "🛠️ GitHub Actions is working!"
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Copy files to server
+        uses: appleboy/scp-action@master
+        with:
+          host: 206.189.239.195
+          username: root
+          key: ${{ secrets.DO_SSH_PRIVATE_KEY }}
+          source: "."
+          target: "/root/odoo17_docker"
+
+      - name: Restart Docker containers
+        uses: appleboy/ssh-action@master
+        with:
+          host: 206.189.239.195
+          username: root
+          key: ${{ secrets.DO_SSH_PRIVATE_KEY }}
+          script: |
+            cd /root/odoo17_docker
+            docker-compose down -v
+            docker-compose up -d --build
