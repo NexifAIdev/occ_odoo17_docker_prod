@@ -29,6 +29,10 @@ RUN usermod -s /bin/bash odoo && \
 # ====== Create log directory for Odoo ======
 RUN mkdir -p /var/log/odoo && chown -R odoo:odoo /var/log/odoo
 
+# Ensure filestore has correct owner and permissions
+RUN mkdir -p /var/lib/odoo/filestore && \
+    chown -R odoo:odoo /var/lib/odoo/filestore
+    
 # ====== Switch to Odoo User ======
 USER odoo
 
