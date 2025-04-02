@@ -30,7 +30,7 @@ RUN usermod -s /bin/bash odoo && \
 RUN mkdir -p /var/log/odoo && chown -R odoo:odoo /var/log/odoo
 
 # ====== Copy and Set Entrypoint ======
-COPY entrypoint.sh /entrypoint.sh
+COPY scripts/entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 ENTRYPOINT ["/entrypoint.sh"]
 
