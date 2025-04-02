@@ -41,7 +41,9 @@ jobs:
             cd /root/occ_odoo17_docker
 
             # Ensure the filestore directory is writable by the Odoo container (UID 1000)
-            chown -R 1000:1000 ./filestore || echo "⚠️ Could not change filestore permissions"
+            mkdir -p ./filestore
+            chown -R 1000:1000 ./filestore
+            chmod -R 755 ./filestore
 
             echo "🧹 Cleaning up existing containers if they exist..."
             docker rm -f occ-odoo17 occ-odoo17-db occ-tomcat || true
