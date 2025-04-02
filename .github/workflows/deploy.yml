@@ -1,10 +1,9 @@
 # ========================================
-# CI/CD Deploy to DigitalOcean via SSH + Docker
+# CI/CD Deploy to DigitalOcean via SSH + Docker (Conditional)
 # ========================================
 
 name: CI/CD Deploy to DigitalOcean
 
-# Trigger this workflow every time code is pushed to the 'main' branch
 on:
   push:
     branches:
@@ -12,25 +11,54 @@ on:
 
 jobs:
   deploy:
-    runs-on: ubuntu-latest  # Use GitHub-hosted Linux runner
+    runs-on: ubuntu-latest
 
     steps:
-      # Step 1: Clone your GitHub repository into the runner
+      # -----------------------------------
+      # 1) Check out the code
+      # -----------------------------------
       - name: 📥 Checkout source code
         uses: actions/checkout@v3
 
-      # Step 2: Securely copy the project files to your DigitalOcean server using SCP
+      # -----------------------------------
+      # 2) Determine which files changed
+      # -----------------------------------
+      - name: 🔎 Determine changed files
+        id: changes
+        run: |
+          # Compare last commit to the one before it
+          DOCKER_CHANGED=$(git diff --name-only HEAD~1 HEAD | grep -E "docker-compose\.yml|Dockerfile|tomcat/" || true)
+          CUSTOM_ADDONS_CHANGED=$(git diff --name-only HEAD~1 HEAD | grep -E "odoo/addons/custom" || true)
+
+          # Set GitHub Actions env variables
+          if [ -n "$DOCKER_CHANGED" ]; then
+            echo "docker_changed=true" >> $GITHUB_ENV
+          else
+            echo "docker_changed=false" >> $GITHUB_ENV
+          fi
+
+          if [ -n "$CUSTOM_ADDONS_CHANGED" ]; then
+            echo "custom_addons_changed=true" >> $GITHUB_ENV
+          else
+            echo "custom_addons_changed=false" >> $GITHUB_ENV
+          fi
+
+      # -----------------------------------
+      # 3) Securely copy files to DigitalOcean
+      # -----------------------------------
       - name: 📦 Copy files to DigitalOcean server
         uses: appleboy/scp-action@master
         with:
-          host: 206.189.239.195                        # Your Droplet's public IP
-          username: root                               # User to connect as (usually root)
-          key: ${{ secrets.DO_SSH_PRIVATE_KEY }}       # SSH private key stored in GitHub Secrets
-          source: "."                                  # Local files to copy
-          target: "/root/occ_odoo17_docker"            # Target folder on the remote server
+          host: 206.189.239.195
+          username: root
+          key: ${{ secrets.DO_SSH_PRIVATE_KEY }}
+          source: "."
+          target: "/root/occ_odoo17_docker"
 
-      # Step 3: Fix filestore permissions & Restart Docker containers on the server
-      - name: 🔁 Fix permissions and restart containers
+      # -----------------------------------
+      # 4) SSH into server and do conditional deploy
+      # -----------------------------------
+      - name: 🔁 Conditional Deploy on Server
         uses: appleboy/ssh-action@master
         with:
           host: 206.189.239.195
@@ -39,13 +67,20 @@ jobs:
           script: |
             echo "📂 Fixing filestore permissions..."
             cd /root/occ_odoo17_docker
-
-            # Ensure the filestore directory is writable by the Odoo container (UID 1000)
+            mkdir -p ./filestore
             chown -R 1000:1000 ./filestore
             chmod -R 777 ./filestore
 
-            echo "🧹 Cleaning up existing containers if they exist..."
-            docker rm -f occ-odoo17 occ-odoo17-db occ-tomcat || true
-
-            echo "🚀 Rebuilding and starting containers..."
-            docker-compose up -d --build
+            # Read the environment variables we set in the previous step
+            if [ "${{ env.docker_changed }}" = "true" ]; then
+              echo "🚀 Docker-related changes found → Full rebuild!"
+              docker-compose down -v
+              docker-compose up -d --build
+            elif [ "${{ env.custom_addons_changed }}" = "true" ]; then
+              echo "♻️ Only custom addons changed → Partial Odoo module update!"
+              # Adjust container name & DB name to your environment
+              docker exec -it occ-odoo17-web odoo -d OCC_Payroll_test01 -u all --stop-after-init
+              docker restart occ-odoo17-web
+            else
+              echo "✅ No changes requiring container restart. Done!"
+            fi
