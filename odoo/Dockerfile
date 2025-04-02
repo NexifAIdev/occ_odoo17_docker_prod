@@ -55,5 +55,5 @@ RUN chmod +x /home/odoo/scripts/odoo_api.py
 USER odoo
 
 # ====== Entrypoint ======
-ENTRYPOINT ["/entrypoint.sh"]
 CMD ["odoo", "-c", "/etc/odoo/odoo.conf", "-u", "all"]
+ENTRYPOINT ["/entrypoint.sh"]
