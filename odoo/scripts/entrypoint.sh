@@ -1,18 +1,16 @@
 #!/bin/bash
 set -e
 
-# Ensure filestore directory is present and writable
-if [ ! -d "/var/lib/odoo/filestore" ]; then
-  mkdir -p /var/lib/odoo/filestore
-fi
+echo ">> Ensuring filestore directory exists..."
+mkdir -p /var/lib/odoo/filestore || true
 
-chmod -R 777 /var/lib/odoo/filestore
+echo ">> Trying to set permissions..."
+chmod -R 777 /var/lib/odoo/filestore || echo "⚠️ Warning: Failed to chmod /var/lib/odoo/filestore"
 
-# You can also create the db name folder if known (optional)
 if [ "$ODOO_DB" ]; then
-  mkdir -p /var/lib/odoo/filestore/$ODOO_DB
-  chmod -R 777 /var/lib/odoo/filestore/$ODOO_DB
+  mkdir -p /var/lib/odoo/filestore/$ODOO_DB || true
+  chmod -R 777 /var/lib/odoo/filestore/$ODOO_DB || echo "⚠️ Warning: Failed to chmod $ODOO_DB"
 fi
 
-# Run Odoo
+echo ">> Starting Odoo with CMD: $@"
 exec "$@"
