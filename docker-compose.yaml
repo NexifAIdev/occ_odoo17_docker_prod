@@ -17,7 +17,7 @@ services:
     depends_on:
       - db           # Wait for PostgreSQL
     environment:
-      - DEBUGPY_PORT=5678                            # Optional debugging port
+      - DEBUGPY_PORT=5678  
 
   # ====== PostgreSQL Database ======
   db:

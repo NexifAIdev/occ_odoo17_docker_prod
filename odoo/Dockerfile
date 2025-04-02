@@ -29,10 +29,6 @@ RUN usermod -s /bin/bash odoo && \
 # ====== Create log directory for Odoo ======
 RUN mkdir -p /var/log/odoo && chown -R odoo:odoo /var/log/odoo
 
-# ====== Copy and Set Entrypoint ======
-COPY scripts/entrypoint.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh
-
 # ====== Switch to Odoo User ======
 USER odoo
 

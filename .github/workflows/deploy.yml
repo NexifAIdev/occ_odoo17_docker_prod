@@ -27,16 +27,24 @@ jobs:
           username: root                               # User to connect as (usually root)
           key: ${{ secrets.DO_SSH_PRIVATE_KEY }}       # SSH private key stored in GitHub Secrets
           source: "."                                  # Local files to copy
-          target: "/root/occ_odoo17_docker"                # Target folder on the remote server
+          target: "/root/occ_odoo17_docker"            # Target folder on the remote server
 
-      # Step 3: Restart your Docker containers to reflect the latest code
-      - name: 🔁 Restart Docker containers on server
+      # Step 3: Fix filestore permissions & Restart Docker containers on the server
+      - name: 🔁 Fix permissions and restart containers
         uses: appleboy/ssh-action@master
         with:
           host: 206.189.239.195
           username: root
           key: ${{ secrets.DO_SSH_PRIVATE_KEY }}
           script: |
+            echo "📂 Fixing filestore permissions..."
             cd /root/occ_odoo17_docker
+
+            # Ensure the filestore directory is writable by the Odoo container (UID 1000)
+            chown -R 1000:1000 ./filestore || echo "⚠️ Could not change filestore permissions"
+
+            echo "🧹 Cleaning up existing containers if they exist..."
             docker rm -f occ-odoo17 occ-odoo17-db occ-tomcat || true
-            docker-compose up -d --build             # Rebuild and restart in detached mode
+
+            echo "🚀 Rebuilding and starting containers..."
+            docker-compose up -d --build
