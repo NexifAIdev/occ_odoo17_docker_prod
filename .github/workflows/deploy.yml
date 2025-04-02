@@ -1,5 +1,10 @@
+# ========================================
+# CI/CD Deploy to DigitalOcean via SSH + Docker
+# ========================================
+
 name: CI/CD Deploy to DigitalOcean
 
+# Trigger this workflow every time code is pushed to the 'main' branch
 on:
   push:
     branches:
@@ -7,22 +12,25 @@ on:
 
 jobs:
   deploy:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-latest  # Use GitHub-hosted Linux runner
 
     steps:
-      - name: Checkout code
+      # Step 1: Clone your GitHub repository into the runner
+      - name: 📥 Checkout source code
         uses: actions/checkout@v3
 
-      - name: Copy files to server
+      # Step 2: Securely copy the project files to your DigitalOcean server using SCP
+      - name: 📦 Copy files to DigitalOcean server
         uses: appleboy/scp-action@master
         with:
-          host: 206.189.239.195
-          username: root
-          key: ${{ secrets.DO_SSH_PRIVATE_KEY }}
-          source: "."
-          target: "/root/odoo17_docker"
+          host: 206.189.239.195                        # Your Droplet's public IP
+          username: root                               # User to connect as (usually root)
+          key: ${{ secrets.DO_SSH_PRIVATE_KEY }}       # SSH private key stored in GitHub Secrets
+          source: "."                                  # Local files to copy
+          target: "/root/odoo17_docker"                # Target folder on the remote server
 
-      - name: Restart Docker containers
+      # Step 3: Restart your Docker containers to reflect the latest code
+      - name: 🔁 Restart Docker containers on server
         uses: appleboy/ssh-action@master
         with:
           host: 206.189.239.195
@@ -30,5 +38,5 @@ jobs:
           key: ${{ secrets.DO_SSH_PRIVATE_KEY }}
           script: |
             cd /root/odoo17_docker
-            docker-compose down -v
-            docker-compose up -d --build
+            docker-compose down -v                    # Stop and remove containers/volumes
+            docker-compose up -d --build              # Rebuild and restart in detached mode
