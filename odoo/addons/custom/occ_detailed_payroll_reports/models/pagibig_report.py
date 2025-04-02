@@ -463,7 +463,7 @@ class PagIbigReport(models.TransientModel):
                     rc.name AS company,                                            -- 5
                     ROUND(hdmf.ee_amount::NUMERIC,2) AS hdmf,	    			   -- 6
                     ROUND(hdmf.ee_amount::NUMERIC,2) AS hdmf_er_share,			   -- 7
-                    COALESCE(he.hdmf_no AS hdmf_no,      								   -- 8
+                    COALESCE(he.hdmf_no,'') AS hdmf_no,      								   -- 8
                     he.employee_id AS emp_id                                       -- 9
 
                 FROM exhr_payslip ep
