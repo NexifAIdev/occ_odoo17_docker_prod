@@ -26,11 +26,9 @@ jobs:
       - name: 🔎 Determine changed files
         id: changes
         run: |
-          # Compare last commit to the one before it
           DOCKER_CHANGED=$(git diff --name-only HEAD~1 HEAD | grep -E "docker-compose\.yml|Dockerfile|tomcat/" || true)
           CUSTOM_ADDONS_CHANGED=$(git diff --name-only HEAD~1 HEAD | grep -E "odoo/addons/custom" || true)
 
-          # Set GitHub Actions env variables
           if [ -n "$DOCKER_CHANGED" ]; then
             echo "docker_changed=true" >> $GITHUB_ENV
           else
@@ -71,15 +69,17 @@ jobs:
             chown -R 1000:1000 ./filestore
             chmod -R 777 ./filestore
 
-            # Read the environment variables we set in the previous step
             if [ "${{ env.docker_changed }}" = "true" ]; then
               echo "🚀 Docker-related changes found → Full rebuild!"
               docker-compose down -v
               docker-compose up -d --build
             elif [ "${{ env.custom_addons_changed }}" = "true" ]; then
-              echo "♻️ Only custom addons changed → Partial Odoo module update!"
-              # Adjust container name & DB name to your environment
-              docker exec -it occ-odoo17-web odoo -d OCC_Payroll_test01 -u all --stop-after-init
+              echo "♻️ Custom addons changed → Updating all Odoo databases..."
+              for db in $(docker exec occ-odoo17-web odoo --list-db); do
+                echo "🔁 Updating DB: $db"
+                docker exec occ-odoo17-web odoo -d "$db" -u all --stop-after-init || true
+              done
+              echo "🔄 Restarting Odoo..."
               docker restart occ-odoo17-web
             else
               echo "✅ No changes requiring container restart. Done!"
