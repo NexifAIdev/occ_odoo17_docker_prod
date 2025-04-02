@@ -38,5 +38,5 @@ jobs:
           key: ${{ secrets.DO_SSH_PRIVATE_KEY }}
           script: |
             cd /root/occ_odoo17_docker
-            docker-compose down -v                    # Stop and remove containers/volumes
-            docker-compose up -d --build              # Rebuild and restart in detached mode
+            docker rm -f occ-odoo17 occ-odoo17-db occ-tomcat || true
+            docker-compose up -d --build             # Rebuild and restart in detached mode
