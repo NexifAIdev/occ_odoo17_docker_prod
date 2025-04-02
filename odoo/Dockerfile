@@ -32,7 +32,7 @@ RUN mkdir -p /var/log/odoo && chown -R odoo:odoo /var/log/odoo
 # ====== Copy and Set Entrypoint ======
 COPY scripts/entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
-ENTRYPOINT ["/entrypoint.sh"]
+
 
 # ====== Switch to Odoo User ======
 USER odoo
@@ -55,4 +55,5 @@ RUN chmod +x /home/odoo/scripts/odoo_api.py
 USER odoo
 
 # ====== Entrypoint ======
+ENTRYPOINT ["/entrypoint.sh"]
 CMD ["odoo", "-c", "/etc/odoo/odoo.conf", "-u", "all"]
