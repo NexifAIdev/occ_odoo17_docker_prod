@@ -1,0 +1,18 @@
+services:
+  # ====== Nginx Proxy Manager (Reverse Proxy & SSL) ======
+  npm_app:
+    image: 'jc21/nginx-proxy-manager:latest'
+    container_name: occ-nginx
+    restart: always
+    ports:
+      - '80:80'      # HTTP traffic for incoming web requests
+      - '443:443'    # HTTPS traffic with SSL
+      - '81:81'      # Web UI admin dashboard (default credentials: admin@example.com / changeme)
+    volumes:
+      - npm_data:/data                         # App data: configs, UI settings, etc.
+      - npm_letsencrypt:/etc/letsencrypt       # SSL certs issued by Let's Encrypt
+
+# ====== Persistent Volumes for NPM ======
+volumes:
+  npm_data:
+  npm_letsencrypt:

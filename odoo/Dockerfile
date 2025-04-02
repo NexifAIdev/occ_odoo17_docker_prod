@@ -1,59 +1,53 @@
+# ====== Base Image ======
 FROM odoo:17
 
+# ====== Metadata ======
+LABEL maintainer="Your Name <youremail@example.com>"
+LABEL description="Custom Odoo 17 Dockerfile with envsubst and waiting for PostgreSQL"
+
+# ====== Set User and Path ======
 USER root
+ENV PATH="/home/odoo/.local/bin:$PATH"
 
-# Comprehensive Python dependencies for Odoo addons
+# ====== Python Dependencies ======
+COPY requirements.txt /home/odoo/requirements.txt
 RUN pip install --upgrade pip && \
-    pip install pandas \
-                mako\
-                countryinfo \
-                httpx==0.27.2 \
-                xlsxwriter \
-                icecream==2.1.3 \
-                httpagentparser==1.9.5 \
-                user-agents==2.2.0 \
-                pylightxl==1.61 \
-                beautifulsoup4 \
-                requests \
-                openpyxl \
-                numpy \
-                python-dateutil \
-                phonenumbers \
-                psycopg2-binary \
-                qrcode \
-                urllib3 \
-                passlib \
-                pytz \
-                lxml \
-                xmltodict \
-                decorator \
-                cryptography
+    pip install --ignore-installed --no-cache-dir -r /home/odoo/requirements.txt
 
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends \
+# ====== System Utilities ======
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
     sudo \
     openssh-client \
-    git \
-    && rm -rf /var/lib/apt/lists/*
+    git && \
+    rm -rf /var/lib/apt/lists/*
 
-RUN usermod -s /bin/bash odoo \
-    && echo "odoo ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
+# ====== Configure Odoo User ======
+RUN usermod -s /bin/bash odoo && \
+    echo "odoo ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
 
+# ====== Create log directory for Odoo ======
+RUN mkdir -p /var/log/odoo && chown -R odoo:odoo /var/log/odoo
+
+# ====== Switch to Odoo User ======
 USER odoo
 
+# ====== Developer Tools ======
 RUN pip3 install --upgrade \
     autopep8 \
     pydevd-odoo \
     debugpy \
     coverage
 
-ENV PATH=~/.local/bin:$PATH
-
+# ====== Additional Scripts ======
 COPY scripts/odoo_api.py /home/odoo/scripts/odoo_api.py
+
+# ====== Make Script Executable ======
 USER root
 RUN chmod +x /home/odoo/scripts/odoo_api.py
 
-# Switch back to the odoo user if needed
+# ====== Final User ======
 USER odoo
 
+# ====== Entrypoint ======
 CMD ["odoo", "-c", "/etc/odoo/odoo.conf", "-u", "all"]

@@ -1,48 +1,56 @@
 services:
+  # ====== Odoo Web Service ======
   web:
     build:
-      context: ./odoo
-      dockerfile: Dockerfile
-    container_name: odoo17-web
+      context: ./odoo         # Dockerfile location
+      dockerfile: Dockerfile  # Custom Dockerfile
+    container_name: occ-odoo17-web
     volumes:
-      - ./odoo/outputs:/odoo/outputs
-      - ./odoo/addons:/odoo/addons 
-      # - ./odoo/src:/odoo
-      - ./odoo/config:/etc/odoo 
-      - ./filestore:/var/lib/odoo/filestore
-
+      - ./odoo/outputs:/odoo/outputs                 # Exported files or logs
+      - ./odoo/addons:/odoo/addons                   # Custom modules
+      # - ./odoo/src:/odoo                           # Optional source code override
+      - ./odoo/config:/etc/odoo                      # Configuration directory
+      - ./filestore:/var/lib/odoo/filestore          # Persistent filestore
     ports:
-      - "8069:8069"
-      - "8072:8072"
+      - "8069:8069"  # Odoo HTTP
+      - "8072:8072"  # Odoo Longpolling (Live Chat, IoT, etc.)
     depends_on:
-      - db
+      - db           # Wait for PostgreSQL
     environment:
-      - DEBUGPY_PORT=5678
+      - DEBUGPY_PORT=5678                            # Optional debugging port
 
+  # ====== PostgreSQL Database ======
   db:
     image: postgres:13
-    container_name: odoo17-db
+    container_name: occ-odoo17-db
     restart: always
     environment:
-      - POSTGRES_DB=postgres_clean
       - POSTGRES_DB=postgres
       - POSTGRES_USER=odoo
       - POSTGRES_PASSWORD=odoo
       - PGDATA=/var/lib/postgresql/data/pgdata
     volumes:
-      - db-data:/var/lib/postgresql/data/pgdata
+      - db-data:/var/lib/postgresql/data/pgdata      # Persistent DB storage
 
+  # ====== Tomcat Service ======
   tomcat:
     build:
       context: ./tomcat
+    container_name: occ-tomcat
     ports:
       - "8080:8080"
     volumes:
-      - ./tomcat/webapps:/opt/tomcat/webapps
+      - ./tomcat/webapps:/usr/local/tomcat/webapps    
     tty: true
     stdin_open: true
-    command: sh -c "catalina.sh run && tail -f /dev/null"
-
+    environment:
+      - JAVA_OPTS=--add-opens=java.base/java.lang=ALL-UNNAMED --add-opens=java.base/java.io=ALL-UNNAMED --add-opens=java.base/java.util=ALL-UNNAMED --add-opens=java.base/java.util.concurrent=ALL-UNNAMED --add-opens=java.rmi/sun.rmi.transport=ALL-UNNAMED -Djdk.disableLastModified=true
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+# ====== Named Volumes ======
 volumes:
-  odoo-filestore:
-  db-data:
+  odoo-filestore:   # Optional: not currently used above, but defined for expansion
+  db-data:          # PostgreSQL persistent storage

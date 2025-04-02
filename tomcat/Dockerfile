@@ -1,22 +1,41 @@
-FROM openjdk:11-jdk-slim
+# Use the official Tomcat base image
+FROM tomcat:9.0.82-jdk11
 
-# Define environment variables
-ENV TOMCAT_VERSION=9.0.87
-ENV CATALINA_HOME=/opt/tomcat
-ENV PATH="$CATALINA_HOME/bin:$PATH"
+# Install unzip and Java compiler
+RUN apt-get update && \
+    apt-get install -y unzip openjdk-11-jdk && \
+    rm -rf /var/lib/apt/lists/*
 
-# Install curl and download Tomcat
-RUN apt-get update && apt-get install -y curl && \
-    curl -fSL https://dlcdn.apache.org/tomcat/tomcat-9/v9.0.102/bin/apache-tomcat-9.0.102.tar.gz | tar -xzC /opt && \
-    mv /opt/apache-tomcat-9.0.102 /opt/tomcat && \
-    apt-get clean && rm -rf /var/lib/apt/lists/*
+# Clear default webapps (optional for clean deploy)
+RUN rm -rf /usr/local/tomcat/webapps/*
 
-# Copy custom configuration or WAR files (optional)
-# COPY config/ /opt/tomcat/conf/
-COPY webapps/ /opt/tomcat/webapps/
+# Copy WAR file into container
+COPY webapps/pentaho-reports-for-odoo.war /tmp/
 
-# Expose Tomcat port
-EXPOSE 8080
+# Copy Java source and properties for XML-RPC
+COPY custom/PentahoRenderer.java /tmp/
+COPY custom/XmlRpcServlet.properties /tmp/
 
-# CMD to keep Tomcat running in foreground
-CMD ["/opt/tomcat/bin/catalina.sh", "run"]
+# Unzip the WAR to modify it
+RUN mkdir /tmp/expanded && \
+    cd /tmp/expanded && \
+    unzip -o /tmp/pentaho-reports-for-odoo.war
+
+# Create destination directory for Java class and compile it
+RUN mkdir -p /tmp/expanded/WEB-INF/classes/com/willdooit/reporting && \
+    javac -classpath "/usr/local/tomcat/lib/servlet-api.jar" \
+    -d /tmp/expanded/WEB-INF/classes \
+    /tmp/PentahoRenderer.java
+
+# Copy the XmlRpcServlet.properties file to register the handler
+RUN mkdir -p /tmp/expanded/WEB-INF/classes/org/apache/xmlrpc/webserver && \
+    cp /tmp/XmlRpcServlet.properties \
+       /tmp/expanded/WEB-INF/classes/org/apache/xmlrpc/webserver/
+
+# Rebuild the WAR with the new files
+RUN cd /tmp/expanded && \
+    jar -cvf /usr/local/tomcat/webapps/pentaho-reports-for-odoo.war *
+
+# Done. Tomcat will auto-deploy the WAR on container start
+
+CMD ["catalina.sh", "run"]
