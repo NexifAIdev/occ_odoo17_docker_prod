@@ -1,0 +1,13 @@
+name: Deploy Test
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  echo:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Say Hello
+        run: echo "🛠️ GitHub Actions is working!"
