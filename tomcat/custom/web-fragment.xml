@@ -1,9 +1,0 @@
-<servlet>
-    <servlet-name>ReportGetServlet</servlet-name>
-    <servlet-class>com.willdooit.servlet.ReportGetServlet</servlet-class>
-</servlet>
-
-<servlet-mapping>
-    <servlet-name>ReportGetServlet</servlet-name>
-    <url-pattern>/customget</url-pattern>
-</servlet-mapping>

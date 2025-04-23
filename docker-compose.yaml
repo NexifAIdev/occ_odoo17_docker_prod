@@ -37,16 +37,16 @@ services:
     build:
       context: ./tomcat
     container_name: occ-tomcat
+    volumes:
+      - ./odoo/addons:/odoo/addons  
     ports:
       - "8080:8080"
-    volumes:
-      - ./tomcat/webapps:/usr/local/tomcat/webapps    
     tty: true
     stdin_open: true
     environment:
       - JAVA_OPTS=--add-opens=java.base/java.lang=ALL-UNNAMED --add-opens=java.base/java.io=ALL-UNNAMED --add-opens=java.base/java.util=ALL-UNNAMED --add-opens=java.base/java.util.concurrent=ALL-UNNAMED --add-opens=java.rmi/sun.rmi.transport=ALL-UNNAMED -Djdk.disableLastModified=true
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080"]
+      test: ["CMD-SHELL", "curl -s -o /dev/null -w '%{http_code}' http://localhost:8080 | grep -qE '200|404'"]
       interval: 30s
       timeout: 10s
       retries: 3
