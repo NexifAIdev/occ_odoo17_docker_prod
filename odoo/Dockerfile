@@ -51,4 +51,4 @@ USER odoo
 
 # ====== Entrypoint ======
 ENTRYPOINT ["/entrypoint.sh"]
-CMD ["odoo", "-c", "/etc/odoo/odoo.conf", "-u", "all"]
+CMD ["odoo", "-c", "/etc/odoo/odoo.conf"]
