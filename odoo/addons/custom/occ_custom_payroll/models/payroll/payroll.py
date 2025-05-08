@@ -1090,6 +1090,9 @@ class exhr_payroll(models.Model):
             ic(data)
 
             for person in data:
+                analytic_list = []
+                analytic_list2 = []
+
                 if person[0] != employee:
                     employee = person[0]
                     emp_id = person[2]
@@ -1159,11 +1162,9 @@ class exhr_payroll(models.Model):
                     )
                     analytic_account_id = jv_employee.analytic_account_id.name
                     analytic_tag_ids = jv_employee.analytic_account_id.analytic_tag_ids
-                    analytic_list = []
                     for j in analytic_tag_ids:
                         analytic_list.append(j.name)
 
-                    analytic_list2 = []
                     if not journal_account:
                         jv_employee2 = self.env["hr.employee"].search(
                             [("id", "=", emp_id), ("active", "=", False)], limit=1
