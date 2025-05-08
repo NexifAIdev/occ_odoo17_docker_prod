@@ -78,17 +78,17 @@ jobs:
               echo "♻️ Custom addons changed → Updating all Odoo databases..."
 
               # 🔁 Original loop through all databases
-              # for db in $(docker exec occ-odoo17-web odoo --list-db); do
-              #   echo "🔁 Updating DB: $db"
-              #   docker exec occ-odoo17-web odoo -d "$db" -u all --stop-after-init || true
-              # done
+              for db in $(docker exec occ-odoo17-web odoo --list-db); do
+                echo "🔁 Updating DB: $db"
+                docker exec occ-odoo17-web odoo -d "$db" -u all --stop-after-init || true
+              done
 
-              # 🆕 Always update the odoo17_occ_payroll_test database
-              echo "🔁 Updating DB: odoo17_occ_payroll_test"
-              docker exec occ-odoo17-web odoo -d odoo17_occ_payroll_test -u all --stop-after-init || true
+              # # 🆕 Always update the odoo17_occ_payroll_test database
+              # echo "🔁 Updating DB: odoo17_occ_payroll_test"
+              # docker exec occ-odoo17-web odoo -d odoo17_occ_payroll_test -u all --stop-after-init || true
 
-              echo "🔄 Restarting Odoo..."
-              docker restart occ-odoo17-web
+              # echo "🔄 Restarting Odoo..."
+              # docker restart occ-odoo17-web
             else
               echo "✅ No changes requiring container restart. Done!"
             fi
