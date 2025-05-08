@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <data>
+    
+        <menuitem sequence="10" 
+            id="import_employee_attendance_main_menu_view" 
+            name="Import Attendance" 
+            parent="hr_attendance.menu_hr_attendance_root"
+			groups="occ_custom_payroll.import_attendance_groups_user,occ_custom_payroll.import_attendance_groups_manager"
+            />
+
+            <menuitem sequence="10" 
+                parent="import_employee_attendance_main_menu_view" 
+                id="import_employee_attendance_menu_view" 
+                action="import_employee_attendance_action_view" 
+                groups="occ_custom_payroll.import_attendance_groups_user"
+                />
+
+			<menuitem sequence="20" 
+                parent="import_employee_attendance_main_menu_view" 
+                id="manager_import_employee_attendance_menu_view" 
+                action="manager_import_employee_attendance_action_view" 
+                groups="occ_custom_payroll.import_attendance_groups_manager"
+                />
+
+			<menuitem sequence="30" 
+                parent="import_employee_attendance_main_menu_view" 
+                id="import_employee_attendance_line_menu_view" 
+                action="import_employee_attendance_line_action_view" 
+                groups="occ_custom_payroll.import_attendance_groups_manager"
+                />
+
+			<menuitem sequence="30" 
+                parent="import_employee_attendance_main_menu_view" 
+                id="attendance_2_attendance_sheet_menu_view_wizard" 
+                action="attendance_2_attendance_sheet_action_view_wizard" 
+                groups="occ_custom_payroll.import_attendance_groups_manager"
+                />
+    
+    </data>
+    
+</odoo>

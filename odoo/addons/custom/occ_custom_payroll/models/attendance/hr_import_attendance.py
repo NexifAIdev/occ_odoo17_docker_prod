@@ -130,7 +130,7 @@ class HRImportAttendance(models.Model):
 
     def import_biometrics(self):
         # Step 1: Delete Existing Records for the Current Attendance ID
-        delete_query = """DELETE FROM import_employee_attendance_line WHERE employee_attendance_id = %s;""" % (self.id)
+        delete_query = """DELETE FROM hr_import_attendance_line WHERE employee_attendance_id = %s;""" % (self.id)
         self._cr.execute(delete_query)
 
         # Step 2: Check if File Exists
@@ -194,7 +194,7 @@ class HRImportAttendance(models.Model):
 
     def import_clockify(self):
         # Step 1: Delete Existing Records for the Current Attendance ID
-        delete_query = """DELETE FROM import_employee_attendance_line WHERE employee_attendance_id = %s;"""
+        delete_query = """DELETE FROM hr_import_attendance_line WHERE employee_attendance_id = %s;"""
         self._cr.execute(delete_query, (self.id,))
 
         # Step 2: Check if File Exists

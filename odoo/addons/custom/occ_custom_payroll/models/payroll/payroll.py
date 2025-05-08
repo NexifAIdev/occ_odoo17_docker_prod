@@ -1163,6 +1163,7 @@ class exhr_payroll(models.Model):
                     for j in analytic_tag_ids:
                         analytic_list.append(j.name)
 
+                    analytic_list2 = []
                     if not journal_account:
                         jv_employee2 = self.env["hr.employee"].search(
                             [("id", "=", emp_id), ("active", "=", False)], limit=1
@@ -1177,7 +1178,7 @@ class exhr_payroll(models.Model):
                         analytic_tag_ids2 = (
                             jv_employee2.analytic_account_id.analytic_tag_ids
                         )
-                        analytic_list2 = []
+
                         for k in analytic_tag_ids2:
                             analytic_list2.append(k.name)
 

@@ -61,11 +61,34 @@
             <tree string="Employee attendances Sheet">
                 <field name="employee_id" widget="many2one_avatar_user"/>
                 <field name="attendance_id"/>
-                <field name="date"/>
-                <field name="actual_in"/>
-                <field name="actual_out"/>
                 <field name="break_hours"/>
-                <field name="actual_time_diff"/>
+                <field name="date" readonly="1" force_save="1" required="1"/>
+                <field name="dayofweek" readonly="1" force_save="1" optional="hide"/>
+                <field name="department_id" invisible="0" readonly="1" force_save="1" optional="hide"/>
+                <field name="work_schedule_type" readonly="1" force_save="1" optional="hide"/>
+                <field name="company_id" readonly="1" force_save="1"/>
+                <field name="rate_type" readonly="1" force_save="1" optional="hide"/>
+
+                <field name="planned_in" widget="float_time" readonly="1" force_save="1"/>
+                <field name="planned_out" widget="float_time" readonly="1" force_save="1"/>
+                <field name="actual_in" widget="float_time" readonly="1" force_save="1"/>
+                <field name="actual_out" widget="float_time" readonly="1" force_save="1"/>
+                <field name="actual_time_diff"  readonly="1" force_save="1"/>
+                <field name="hrs_for_payroll"  readonly="1" force_save="1" invisible="1" optional="hide"/>
+                <field name="mins_for_late"  readonly="1" force_save="1" invisible="0"/>
+                <field name="mins_for_undertime"  readonly="1" force_save="1" invisible="0"/>
+
+                <field name="leave_start" widget="float_time" optional="hide" readonly="1" force_save="1" invisible="1"/>
+                <field name="leave_end" widget="float_time" optional="hide" readonly="1" force_save="1" invisible="1"/>	
+                <field name="leave_start" widget="float_time" optional="hide" readonly="1" force_save="1"/>
+                <field name="leave_end" widget="float_time" optional="hide" readonly="1" force_save="1"/>	
+                <field name="manager_ids" widget="many2many_tags" readonly="1" invisible="1"/>
+
+                <field name="schedule_type_ids" widget="many2many_tags" options="{'color_field': 'color', 'no_create_edit': True}" readonly="1" force_save="1" optional="hide"/>
+
+                <field name="original" groups="occ_custom_payroll.import_attendance_groups_manager" optional="hide"/>
+                <field name="extra" groups="hr_attendance.group_hr_attendance_user" optional="hide"/>
+                <field name="active" optional="hide"/>
             </tree>
         </field>
     </record>

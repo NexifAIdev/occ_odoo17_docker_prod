@@ -10,6 +10,13 @@
             parent="menu_exhr_payroll"
             />
 
+        <menuitem id="menu_exhr_payroll_13th__action"
+            action="exhr_payroll_13th__action"
+            name="13th Month Pay"
+            sequence="2"
+            parent="menu_exhr_payroll"
+            />
+
         <!-- Action Window - Late/Undertime Config -->
         <menuitem id="menu_exhr_late_undertime_config_view_action" 
             action="exhr_late_undertime_config_view_action"

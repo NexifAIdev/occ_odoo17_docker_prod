@@ -35,7 +35,12 @@ class exhr_payslip(models.Model):
         related="employee_id.department_id", string="Department", store=True, index=True
     )
     state = fields.Selection(
-        [("draft", "Draft"), ("posted", "Posted"), ("cancel", "Cancel"), ("invalid", "Invalid")],
+        [
+            ("draft", "Draft"),
+            ("posted", "Posted"),
+            ("cancel", "Cancel"),
+            ("invalid", "Invalid"),
+        ],
         copy=False,
         default="draft",
         track_visibility="onchange",
@@ -1695,6 +1700,7 @@ class exhr_payslip(models.Model):
 
             # Track regular schedule days
             reg_count = 0
+            ordinary_ratetypes = ["0", "8", "16", "24"]
 
             for rec in att_list:
                 weekday = rec.date.weekday()  # Monday=0, Sunday=6
@@ -1742,9 +1748,10 @@ class exhr_payslip(models.Model):
                         days_leave_wo_pay += 0.5
 
                     # Full-day absence
-                    if rec.rate_type in ["1"] and rec.actual_in and rec.actual_out:
-                        days_leave_wo_pay += 1
-                        rest_days_count += 1
+                    if rec.rate_type in ordinary_ratetypes:
+                        if not rec.actual_in or not rec.actual_out:
+                            days_leave_wo_pay += 1
+                            rest_days_count += 1
 
                 elif att_list[0].work_schedule_type == "fixed":
                     if (
@@ -1761,9 +1768,13 @@ class exhr_payslip(models.Model):
                     ):
                         days_leave_wo_pay += 0.5
 
-                    if rec.rate_type in ["1"] and rec.actual_in and rec.actual_out:
-                        days_leave_wo_pay += 1
-                        rest_days_count += 1
+                    if rec.rate_type in ordinary_ratetypes:
+                        if not rec.actual_in or not rec.actual_out:
+                            days_leave_wo_pay += 1
+                            rest_days_count += 1
+                    # if rec.rate_type in ["1"] and rec.actual_in and rec.actual_out:
+                    #     days_leave_wo_pay += 1
+                    #     rest_days_count += 1
 
                 elif att_list[0].work_schedule_type in ["na", "ww"]:
                     days_leave_wo_pay = 0  # No LWOP for non-applicable or 48H WW schedule
@@ -2613,7 +2624,7 @@ class exhr_payslip(models.Model):
                 else:
                     raise UserError("Wage not in PHIC Contri. range")
 
-    def compute_hdmf(self, vals):
+    def compute_hdmf_old(self, vals):
         """Computes HDMF Contribution based on contract salary (as per AVSC Policy) in DEDUCTIONS table:
         - checking for HDMF config table is based on contract monthly salary
         - computation of PHIC contri (3%) is based on Base Salary
@@ -2756,6 +2767,117 @@ class exhr_payslip(models.Model):
                 else:
                     raise UserError("Wage not in HDMF Contri. range")
 
+    def compute_hdmf(self, vals):
+        """Computes HDMF Contribution based on contract salary (as per AVSC Policy) in DEDUCTIONS table:
+        - Uses custom amount if enforce_custom_hdmf_pay is enabled
+        - Otherwise, checks HDMF config table based on wage
+        """
+        valid = 0
+        if vals:
+            deduction_type_obj = self.env["deduction.type"]
+            deduction_id = deduction_type_obj.search(
+                [("name", "=", "HDMF Contribution"), ("active", "=", True)], limit=1
+            )
+
+            if not deduction_id:
+                return  # No config found
+
+            # Get base salary
+            amount = (
+                self.env["exhr.payslip.earnings"]
+                .search(
+                    [
+                        ("name_id.name", "=", "Base Salary"),
+                        ("payslip_id", "=", self.id),
+                    ],
+                    limit=1,
+                )
+                .amount_subtotal
+            )
+
+            personal_contri = 0.0
+            employer_contri = 100  # Default
+
+            # 🔀 Check if we use custom contribution
+            if vals.enforce_custom_hdmf_pay:
+                personal_contri = vals.custom_hdmf_pay_amt
+                valid = 1
+            else:
+                hdmf_config = self.env["hdmf.contribution.config"].search(
+                    [("range_from", "<=", vals.wage), ("range_to", ">=", vals.wage)],
+                    limit=1,
+                )
+
+                if not hdmf_config:
+                    raise UserError("Wage not in HDMF Contri. range")
+
+                # Cap amount if needed
+                if hdmf_config.max_compensation != 0 and amount > hdmf_config.max_compensation:
+                    amount = hdmf_config.max_compensation
+
+                personal_contri = amount * hdmf_config.personal_contri
+                employer_contri = amount * hdmf_config.employer_contri
+
+                # 🧮 Validate cut-off conditions
+                if vals.hdmf_contri_amount > 0:
+                    personal_contri = vals.hdmf_contri_amount
+                    valid = 1
+
+                if vals.hdmf_1st_co_date and vals.hdmf_2nd_co_date:
+                    valid = 1
+                elif vals.hdmf_1st_co_date and not vals.hdmf_2nd_co_date:
+                    co_date = datetime.strptime(
+                        f"{datetime.today().year}-{datetime.today().month}-{vals.hdmf_1st_co_date}",
+                        "%Y-%m-%d",
+                    ).date()
+                    if self.pay_period_from <= co_date <= self.pay_period_to:
+                        valid = 1
+                    else:
+                        valid = 0
+
+                # Round and normalize
+                personal_contri = round(personal_contri, 3)
+                if int(str(personal_contri)[-1]) >= 5:
+                    personal_contri = round(personal_contri + (10 - int(str(personal_contri)[-1])) * 0.001, 2)
+                else:
+                    personal_contri = round(personal_contri, 2)
+
+                # Minimum fallback
+                personal_contri = max(personal_contri, 100)
+
+            # 🚀 Create or update deduction + HDMF line
+            if valid == 1:
+                deduction_line = self.env["exhr.payslip.deductions"].search(
+                    [("payslip_id", "=", self.id), ("name_id", "=", deduction_id.id)],
+                    limit=1,
+                )
+
+                data_dict = {
+                    "amount_total": personal_contri,
+                    "personal_contri": personal_contri,
+                    "employer_contri": employer_contri,
+                }
+
+                if deduction_line:
+                    deduction_line.write(data_dict)
+                else:
+                    self.env["exhr.payslip.deductions"].create(
+                        {
+                            **data_dict,
+                            "payslip_id": self.id,
+                            "name_id": deduction_id.id,
+                        }
+                    )
+
+                self.env["hdmf.contribution.line"].create(
+                    {
+                        "payslip_id": self.id,
+                        "date": self.pay_period_to,
+                        "ee_amount": personal_contri,
+                        "er_amount": employer_contri,
+                    }
+                )
+    
     def compute_tax(self, amount):
         """Computes withholding tax amount for the employee depending on the
         - range of the taxable amount on the employee's payslip
@@ -3370,8 +3492,8 @@ class exhr_payslip(models.Model):
             raise UserError("No Running Contract found!")
 
     def unlink(self):
-        for rec in self:
-            rec.state = "invalid"
+        # for rec in self:
+        #     rec.state = "invalid"
 
-        ic("unlinked")
-        # return super(exhr_payslip, self).unlink()
+        print("unlinked")
+        return super(exhr_payslip, self).unlink()

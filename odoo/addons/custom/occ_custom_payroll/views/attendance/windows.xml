@@ -3,7 +3,41 @@
 
     <data>
     
-        
+        <record id="import_employee_attendance_action_view" model="ir.actions.act_window">
+			<field name="name">Import Employee Attendance (User)</field>
+			<field name="res_model">hr.import.attendance</field>
+			<field name="view_mode">tree,form</field>
+			<field name="target">current</field>
+			<field name="domain">[('create_uid','=',uid)]</field>
+		</record>
+
+		<record id="manager_import_employee_attendance_action_view" model="ir.actions.act_window">
+			<field name="name">Import Employee Attendance (Manager)</field>
+			<field name="res_model">hr.import.attendance</field>
+			<field name="view_mode">tree,form</field>
+			<field name="target">current</field>
+			<field name="domain">[('state','in',['upload','validated'])]</field>
+		</record>
+
+        <record id="import_employee_attendance_line_action_view" model="ir.actions.act_window">
+			<field name="name">Import Employee Attendance Line</field>
+			<field name="res_model">hr.import.attendance.line</field>
+			<field name="view_mode">tree</field>
+			<field name="domain">[]</field>
+			<field name="view_ids" eval="[
+				(5, 0, 0),
+				(0, 0, {'view_mode': 'tree', 'view_id': ref('import_employee_attendance_line_tree_view')})
+			]"/>
+		</record>
+
+        <record id="attendance_2_attendance_sheet_action_view_wizard" model="ir.actions.act_window">
+			<field name="name">Sync Attendance Sheet</field>
+			<field name="type">ir.actions.act_window</field>
+			<field name="res_model">attendance.to.attendance.sheet</field>
+			<field name="view_mode">form</field>
+			<field name="view_id" ref="attendance_2_attendance_sheet_form_view_wizard"/>
+			<field name="target">new</field>
+		</record>
     
     </data>
     

@@ -12,9 +12,45 @@
 				<field name="check_in" position="before">
 					<field name="check_in_date" string="Date" invisible="False"/>
 				</field>
+
+				<xpath expr="//field[@name='worked_hours']" position="after">
+					<field name="import_code" groups="occ_custom_payroll.import_attendance_groups_manager" />
+					<field name="pushed_to_sheet" readonly="1" invisible="1" groups="occ_custom_payroll.import_attendance_groups_manager"/>
+					<field name="next_day_checkout" invisible="1" groups="occ_custom_payroll.import_attendance_groups_manager"/>
+				</xpath>
 				
 			</field>
 		</record> 
+
+		<record id="import_employee_attendance_tree_view" model="ir.ui.view">
+			<field name="name">import_employee_attendance.tree_view</field>
+			<field name="model">hr.import.attendance</field>
+			<field name="arch" type="xml">
+				<tree>
+					<field name="name"/>
+					<field name="upload_type"/>
+					<field name="state"/>
+				</tree>
+			</field>
+		</record>
+
+		<record id="import_employee_attendance_line_tree_view" model="ir.ui.view">
+			<field name="name">import_employee_attendance_line.form_view</field>
+			<field name="model">hr.import.attendance.line</field>
+			<field name="arch" type="xml">
+				<tree create="false" edit="false">
+					<field name="employee_id" options="{'no_create_edit':1,'no_create':1, 'no_open':1}"/>
+					<field name="name"/>
+					<field name="date_from"/>
+					<field name="hour_from"/>
+					<field name="date_to"/>
+					<field name="hour_to"/>
+					<field name="datestamp_from"/>
+					<field name="datestamp_to"/>
+					<field name="employee_attendance_id"/>
+				</tree>
+			</field>
+		</record>
     
     </data>
     
