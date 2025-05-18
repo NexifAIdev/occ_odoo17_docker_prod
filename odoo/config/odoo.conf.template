@@ -1,0 +1,91 @@
+[options]
+; ====== Addons Settings ======
+addons_path = /odoo/addons/custom
+
+# ; ====== Security & Admin ======
+admin_passwd = ${ODOO_ADMIN_PASS}
+
+; ====== Filestore & Data ======
+data_dir = /var/lib/odoo
+
+; ====== Database Configuration ======
+db_host = ${DB_HOST}
+db_port = ${DB_PORT}
+db_user = ${ODOO_DB_USER}
+db_password = ${ODOO_DB_PASSWORD}
+db_name = False
+db_maxconn = 64
+db_sslmode = prefer
+db_template = template0
+
+; ====== Demo/Test/Email Settings ======
+demo = {}
+email_from = False
+from_filter = False
+
+; ====== GeoIP (for location tracking, optional) ======
+geoip_database = /usr/share/GeoIP/GeoLite2-City.mmdb
+
+; ====== HTTP Server Settings ======
+http_enable = True
+http_port = 8069
+longpolling_port = 8072
+proxy_mode = True
+
+; ====== Performance Limits ======
+limit_memory_hard = 2684354560
+limit_memory_soft = 2147483648
+limit_request = 8192
+limit_time_cpu = 3600
+limit_time_real = 3600
+limit_time_real_cron = -1
+max_cron_threads = 2
+
+
+; ====== Logging ======
+log_db = False
+log_db_level = info
+log_handler = :INFO
+log_level = info
+logfile = 
+
+; ====== Reporting ======
+reportgz = False
+screenshots = /tmp/odoo_tests
+screencasts = 
+
+; ====== Modules and Server Settings ======
+server_wide_modules = base,web
+workers = 0
+
+; ====== SMTP Settings ======
+smtp_server = localhost
+smtp_port = 25
+smtp_user = False
+smtp_password = False
+smtp_ssl = False
+smtp_ssl_certificate_filename = False
+smtp_ssl_private_key_filename = False
+
+; ====== Developer & Debugging ======
+osv_memory_age_limit = False
+osv_memory_count_limit = False
+pg_path = 
+pidfile = 
+syslog = False
+
+; ====== Testing ======
+test_enable = False
+test_file = 
+test_tags = None
+
+; ====== Translations ======
+translate_modules = ['all']
+transient_age_limit = 1.0
+
+; ====== Miscellaneous ======
+import_partial = 
+list_db = True
+unaccent = False
+upgrade_path = 
+without_demo = False

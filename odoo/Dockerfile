@@ -9,18 +9,26 @@ LABEL description="Custom Odoo 17 Dockerfile with envsubst and waiting for Postg
 USER root
 ENV PATH="/home/odoo/.local/bin:$PATH"
 
+# ====== System Utilities ======
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+        gettext \
+        sudo \
+        openssh-client \
+        git \
+        netcat-openbsd && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
 # ====== Python Dependencies ======
 COPY requirements.txt /home/odoo/requirements.txt
 RUN pip install --upgrade pip && \
     pip install --ignore-installed --no-cache-dir -r /home/odoo/requirements.txt
 
-# ====== System Utilities ======
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends \
-    sudo \
-    openssh-client \
-    git && \
-    rm -rf /var/lib/apt/lists/*
+# ====== Copy config and entrypoint ======
+COPY config/odoo.conf.template /etc/odoo/odoo.conf.template
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
 
 # ====== Configure Odoo User ======
 RUN usermod -s /bin/bash odoo && \
