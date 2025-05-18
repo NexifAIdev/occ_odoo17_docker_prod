@@ -1,7 +1,3 @@
-# ========================================
-# CI/CD Deploy to DigitalOcean via SSH + Docker (Conditional)
-# ========================================
-
 name: CI/CD Deploy to DigitalOcean
 
 on:
@@ -14,36 +10,18 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # -----------------------------------
-      # 1) Check out the code
-      # -----------------------------------
       - name: 📥 Checkout source code
         uses: actions/checkout@v3
 
-      # -----------------------------------
-      # 2) Determine which files changed
-      # -----------------------------------
       - name: 🔎 Determine changed files
         id: changes
         run: |
           DOCKER_CHANGED=$(git diff --name-only HEAD~1 HEAD | grep -E "docker-compose\.yml|Dockerfile|tomcat/" || true)
           CUSTOM_ADDONS_CHANGED=$(git diff --name-only HEAD~1 HEAD | grep -E "odoo/addons/custom" || true)
 
-          if [ -n "$DOCKER_CHANGED" ]; then
-            echo "docker_changed=true" >> $GITHUB_ENV
-          else
-            echo "docker_changed=false" >> $GITHUB_ENV
-          fi
+          echo "docker_changed=${DOCKER_CHANGED:+true}" >> $GITHUB_ENV
+          echo "custom_addons_changed=${CUSTOM_ADDONS_CHANGED:+true}" >> $GITHUB_ENV
 
-          if [ -n "$CUSTOM_ADDONS_CHANGED" ]; then
-            echo "custom_addons_changed=true" >> $GITHUB_ENV
-          else
-            echo "custom_addons_changed=false" >> $GITHUB_ENV
-          fi
-
-      # -----------------------------------
-      # 3) Securely copy files to DigitalOcean
-      # -----------------------------------
       - name: 📦 Copy files to DigitalOcean server
         uses: appleboy/scp-action@master
         with:
@@ -53,9 +31,6 @@ jobs:
           source: "."
           target: "/root/occ_odoo17_docker_prod"
 
-      # -----------------------------------
-      # 4) SSH into server and do conditional deploy
-      # -----------------------------------
       - name: 🔁 Conditional Deploy on Server
         uses: appleboy/ssh-action@master
         with:
@@ -76,8 +51,6 @@ jobs:
 
             elif [ "${{ env.custom_addons_changed }}" = "true" ]; then
               echo "♻️ Custom addons changed → Updating all Odoo databases..."
-
-              # 🔁 Original loop through all databases
               for db in $(docker exec occ-odoo17-web-prod odoo --list-db); do
                 echo "🔁 Updating DB: $db"
                 docker exec occ-odoo17-web-prod odoo -d "$db" -u all --stop-after-init || true
