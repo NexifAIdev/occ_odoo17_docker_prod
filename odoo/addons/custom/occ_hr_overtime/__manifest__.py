@@ -18,7 +18,7 @@
     'version': '0.1',
 
     # any module necessary for this one to work correctly
-    'depends': ['base','ohrms_core'],
+    'depends': ['base','ohrms_core','occ_overtime'],
 
     # always loaded
     'data': [

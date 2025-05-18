@@ -80,10 +80,21 @@
             </xpath>
 
             <!-- Added Government Details -->
-            <xpath expr="//field[@name='ssnid']" position='attributes'>
+            <!-- <xpath expr="//field[@name='ssnid']" position='attributes'>
                 <attribute name="invisible">True</attribute>
             </xpath>
             <xpath expr="//field[@name='ssnid']" position='after'>
+                <field name="sss_no"/>
+                <field name="tin"/>
+                <field name="philhealth_no"/>
+                <field name="hdmf_no"/>
+                <field name="prc_license_no"/>
+                <field name="passport_no"/>
+                <field name="rdo_no"/>
+            </xpath> -->
+
+            <!-- Removed references to non-existent ssnid field -->
+            <xpath expr="//field[@name='work_email']" position='after'>
                 <field name="sss_no"/>
                 <field name="tin"/>
                 <field name="philhealth_no"/>
