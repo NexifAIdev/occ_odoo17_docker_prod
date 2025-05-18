@@ -1,5 +1,6 @@
 # ========================================
-# CI/CD Deploy to DigitalOcean via SSH + Docker (Conditional)
+# CI/CD: Auto-deploy to DigitalOcean via SSH and Docker Compose
+# Triggered on push to main branch
 # ========================================
 
 name: CI/CD Deploy to DigitalOcean
@@ -7,7 +8,7 @@ name: CI/CD Deploy to DigitalOcean
 on:
   push:
     branches:
-      - main
+      - main  # Trigger only when changes are pushed to the main branch
 
 jobs:
   deploy:
@@ -15,46 +16,47 @@ jobs:
 
     steps:
       # -----------------------------------
-      # 1) Check out the code
+      # Step 1: Checkout latest code
       # -----------------------------------
       - name: 📥 Checkout source code
         uses: actions/checkout@v3
 
       # -----------------------------------
-      # 2) Determine which files changed
+      # Step 2: Detect what files changed
+      # Sets environment variables:
+      #   - docker_changed=true/false
+      #   - custom_addons_changed=true/false
       # -----------------------------------
       - name: 🔎 Determine changed files
         id: changes
         run: |
+          # Check for Docker-related changes (docker-compose, Dockerfile, tomcat config)
           DOCKER_CHANGED=$(git diff --name-only HEAD~1 HEAD | grep -E "docker-compose\.yml|Dockerfile|tomcat/" || true)
+
+          # Check for changes in custom addons
           CUSTOM_ADDONS_CHANGED=$(git diff --name-only HEAD~1 HEAD | grep -E "odoo/addons/custom" || true)
 
-          if [ -n "$DOCKER_CHANGED" ]; then
-            echo "docker_changed=true" >> $GITHUB_ENV
-          else
-            echo "docker_changed=false" >> $GITHUB_ENV
-          fi
-
-          if [ -n "$CUSTOM_ADDONS_CHANGED" ]; then
-            echo "custom_addons_changed=true" >> $GITHUB_ENV
-          else
-            echo "custom_addons_changed=false" >> $GITHUB_ENV
-          fi
+          # Set GitHub Actions environment variables
+          echo "docker_changed=${DOCKER_CHANGED:+true}" >> $GITHUB_ENV
+          echo "custom_addons_changed=${CUSTOM_ADDONS_CHANGED:+true}" >> $GITHUB_ENV
 
       # -----------------------------------
-      # 3) Securely copy files to DigitalOcean
+      # Step 3: Copy updated project files to the DigitalOcean server
       # -----------------------------------
       - name: 📦 Copy files to DigitalOcean server
         uses: appleboy/scp-action@master
         with:
           host: 206.189.239.195
           username: root
-          key: ${{ secrets.DO_SSH_PRIVATE_KEY }}
-          source: "."
-          target: "/root/occ_odoo17_docker"
+          key: ${{ secrets.SSH_PRIVATE_KEY }}  # SSH key stored in GitHub secrets
+          source: "."  # Copy all project files
+          target: "/root/occ_odoo17_docker"  # Target directory on server
 
       # -----------------------------------
-      # 4) SSH into server and do conditional deploy
+      # Step 4: SSH into server and perform conditional deployment
+      #   - If Docker files changed: full rebuild
+      #   - If only Odoo custom addons changed: update all DBs
+      #   - Else: no action needed
       # -----------------------------------
       - name: 🔁 Conditional Deploy on Server
         uses: appleboy/ssh-action@master
@@ -69,26 +71,21 @@ jobs:
             chown -R 1000:1000 ./filestore
             chmod -R 777 ./filestore
 
+            # Full rebuild if any Docker-related files changed
             if [ "${{ env.docker_changed }}" = "true" ]; then
-              echo "🚀 Docker-related changes found → Full rebuild!"
-              docker-compose down -v
-              docker-compose up -d --build
+              echo "🚀 Docker-related changes found → Rebuilding all containers..."
+              docker compose down -v
+              docker compose up -d --build
 
+            # Update Odoo DBs if only custom addons changed
             elif [ "${{ env.custom_addons_changed }}" = "true" ]; then
-              echo "♻️ Custom addons changed → Updating all Odoo databases..."
-
-              # 🔁 Original loop through all databases
-              for db in $(docker exec occ-odoo17-web odoo --list-db); do
-                echo "🔁 Updating DB: $db"
-                docker exec occ-odoo17-web odoo -d "$db" -u all --stop-after-init || true
+              echo "♻️ Custom addons changed → Upgrading all databases..."
+              for db in $(docker exec occ-odoo17-web-prod odoo --list-db); do
+                echo "🔄 Upgrading database: $db"
+                docker exec occ-odoo17-web-prod odoo -d "$db" -u all --stop-after-init || true
               done
 
-              # # 🆕 Always update the odoo17_occ_payroll_test database
-              # echo "🔁 Updating DB: odoo17_occ_payroll_test"
-              # docker exec occ-odoo17-web odoo -d odoo17_occ_payroll_test -u all --stop-after-init || true
-
-              # echo "🔄 Restarting Odoo..."
-              # docker restart occ-odoo17-web
+            # No changes that require redeploying
             else
-              echo "✅ No changes requiring container restart. Done!"
+              echo "✅ No relevant changes. Deployment skipped."
             fi
