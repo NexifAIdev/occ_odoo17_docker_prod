@@ -51,9 +51,17 @@
       </record>
 
       <!-- Menu Item -->
-      <menuitem id="menu_hr_management" name="Overtime" web_icon="fas fa-user-clock"/>
+      <menuitem id="menu_hr_management" 
+                name="Overtime" 
+                groups="occ_overtime.group_hr_overtime_manager"
+                web_icon="fas fa-user-clock"/>
 
-      <menuitem id="menu_hr_overtime" name="Overtime Requests" parent="menu_hr_management" action="action_hr_overtime" sequence="1"/>
+      <menuitem id="menu_hr_overtime" 
+                name="Overtime Requests" 
+                parent="menu_hr_management" 
+                groups="occ_overtime.group_hr_overtime_manager"
+                action="action_hr_overtime" 
+                sequence="1"/>
 
 
   </data>

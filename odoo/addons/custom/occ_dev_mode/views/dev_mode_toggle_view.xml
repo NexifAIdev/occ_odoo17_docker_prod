@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+  <template id="dev_mode_toggle_user_menu" inherit_id="web.user_menu" name="Developer Mode Toggle">
+    <xpath expr="//t[@t-set='user_menu']" position="inside">
+      <t t-if="user.has_group('occ_dev_mode.group_occ_developer_mode')">
+        <t t-if="request.session.debug">
+          <li class="dropdown-item">
+            <i class="fa fa-wrench me-1"/> Developer Mode
+          </li>
+        </t>
+        <t t-if="not request.session.debug">
+          <li class="dropdown-item">
+            <i class="fa fa-user me-1"/> User Mode
+          </li>
+        </t>
+      </t>
+    </xpath>
+  </template>
+</odoo>

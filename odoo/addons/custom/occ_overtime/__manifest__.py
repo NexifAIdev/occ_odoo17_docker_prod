@@ -12,6 +12,7 @@
     'version': '0.1',
     'depends': ['base', 'hr'],  # Ensure 'hr' is included
     'data': [
+        'security/hr_overtime_security.xml',
         'security/ir.model.access.csv',
         'views/views.xml',
     ],

@@ -1,0 +1,6 @@
+<odoo>
+  <record id="group_occ_developer_mode" model="res.groups">
+    <field name="name">Developer Mode Access</field>
+    <field name="category_id" ref="base.module_category_hidden"/>
+  </record>
+</odoo>
