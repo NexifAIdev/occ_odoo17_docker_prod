@@ -13,9 +13,11 @@ jobs:
       - name: 📥 Checkout source code
         uses: actions/checkout@v3
 
-      - name: 🔑 Set up SSH Known Hosts
+      - name: 🔑 Set up SSH Key
         run: |
           mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
           ssh-keyscan -H 178.128.107.59 >> ~/.ssh/known_hosts
 
       - name: 📦 SCP to Server
