@@ -13,11 +13,9 @@ jobs:
       - name: 📥 Checkout source code
         uses: actions/checkout@v3
 
-      - name: 🔑 Set up SSH Key
+      - name: 🔑 Set up SSH Known Hosts
         run: |
           mkdir -p ~/.ssh
-          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
-          chmod 600 ~/.ssh/id_rsa
           ssh-keyscan -H 178.128.107.59 >> ~/.ssh/known_hosts
 
       - name: 📦 SCP to Server
@@ -37,5 +35,6 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
             cd /root/occ_odoo17_docker_prod
-            docker-compose down
-            docker-compose up -d --build
+            git pull origin main
+            docker compose down
+            docker compose up -d --build
