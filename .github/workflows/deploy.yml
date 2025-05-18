@@ -1,4 +1,8 @@
-name: CI/CD Deploy to Cloud
+# ========================================
+# CI/CD Deploy to DigitalOcean via SSH + Docker (Conditional)
+# ========================================
+
+name: CI/CD Deploy to DigitalOcean
 
 on:
   push:
@@ -10,25 +14,75 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # -----------------------------------
+      # 1) Check out the code
+      # -----------------------------------
       - name: 📥 Checkout source code
         uses: actions/checkout@v3
 
-      - name: 🔑 Set up SSH Key
+      # -----------------------------------
+      # 2) Determine which files changed
+      # -----------------------------------
+      - name: 🔎 Determine changed files
+        id: changes
         run: |
-          mkdir -p ~/.ssh
-          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
-          chmod 600 ~/.ssh/id_rsa
-          ssh-keyscan -H 178.128.107.59 >> ~/.ssh/known_hosts
-        shell: bash
+          DOCKER_CHANGED=$(git diff --name-only HEAD~1 HEAD | grep -E "docker-compose\.yml|Dockerfile|tomcat/" || true)
+          CUSTOM_ADDONS_CHANGED=$(git diff --name-only HEAD~1 HEAD | grep -E "odoo/addons/custom" || true)
 
-      - name: 🚀 Deploy to Server
+          if [ -n "$DOCKER_CHANGED" ]; then
+            echo "docker_changed=true" >> $GITHUB_ENV
+          else
+            echo "docker_changed=false" >> $GITHUB_ENV
+          fi
+
+          if [ -n "$CUSTOM_ADDONS_CHANGED" ]; then
+            echo "custom_addons_changed=true" >> $GITHUB_ENV
+          else
+            echo "custom_addons_changed=false" >> $GITHUB_ENV
+          fi
+
+      # -----------------------------------
+      # 3) Securely copy files to DigitalOcean
+      # -----------------------------------
+      - name: 📦 Copy files to DigitalOcean server
+        uses: appleboy/scp-action@master
+        with:
+          host: 206.189.239.195
+          username: root
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          source: "."
+          target: "/root/occ_odoo17_docker_prod"
+
+      # -----------------------------------
+      # 4) SSH into server and do conditional deploy
+      # -----------------------------------
+      - name: 🔁 Conditional Deploy on Server
         uses: appleboy/ssh-action@master
         with:
-          host: 178.128.107.59
+          host: 206.189.239.195
           username: root
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
+            echo "📂 Fixing filestore permissions..."
             cd /root/occ_odoo17_docker_prod
-            git pull origin main
-            docker compose down
-            docker compose up -d --build
+            mkdir -p ./filestore
+            chown -R 1000:1000 ./filestore
+            chmod -R 777 ./filestore
+
+            if [ "${{ env.docker_changed }}" = "true" ]; then
+              echo "🚀 Docker-related changes found → Full rebuild!"
+              docker-compose down -v
+              docker-compose up -d --build
+
+            elif [ "${{ env.custom_addons_changed }}" = "true" ]; then
+              echo "♻️ Custom addons changed → Updating all Odoo databases..."
+
+              # 🔁 Original loop through all databases
+              for db in $(docker exec occ-odoo17-web-prod odoo --list-db); do
+                echo "🔁 Updating DB: $db"
+                docker exec occ-odoo17-web-prod odoo -d "$db" -u all --stop-after-init || true
+              done
+
+            else
+              echo "✅ No changes requiring container restart. Done!"
+            fi
