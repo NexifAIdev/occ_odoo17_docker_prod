@@ -50,11 +50,15 @@ jobs:
               docker-compose up -d --build
 
             elif [ "${{ env.custom_addons_changed }}" = "true" ]; then
-              echo "♻️ Custom addons changed → Updating all Odoo databases..."
-              for db in $(docker exec occ-odoo17-web-prod odoo --list-db); do
-                echo "🔁 Updating DB: $db"
-                docker exec occ-odoo17-web-prod odoo -d "$db" -u all --stop-after-init || true
-              done
+            echo "♻️ Custom addons changed → Updating all Odoo databases..."
+
+            docker ps -a
+            docker exec occ-odoo17-web-prod ls /odoo/addons/custom
+
+            for db in $(docker exec occ-odoo17-web-prod odoo --list-db); do
+              echo "🔁 Updating DB: $db"
+              docker exec occ-odoo17-web-prod /entrypoint.sh odoo -d "$db" -u all --stop-after-init || true
+            done
 
             else
               echo "✅ No changes requiring container restart. Done!"
