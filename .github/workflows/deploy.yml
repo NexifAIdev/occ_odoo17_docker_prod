@@ -27,7 +27,7 @@ jobs:
         with:
           host: 206.189.239.195
           username: root
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          key: ${{ secrets.PRIVATE_KEY }}
           source: "."
           target: "/root/occ_odoo17_docker_prod"
 
@@ -36,7 +36,7 @@ jobs:
         with:
           host: 206.189.239.195
           username: root
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          key: ${{ secrets.PRIVATE_KEY }}
           script: |
             echo "📂 Fixing filestore permissions..."
             cd /root/occ_odoo17_docker_prod
