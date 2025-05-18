@@ -1,4 +1,4 @@
-name: Deploy to Cloud
+name: CI/CD Deploy to Cloud
 
 on:
   push:
@@ -10,25 +10,32 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v3
+      - name: 📥 Checkout source code
+        uses: actions/checkout@v3
 
-    - name: Set up SSH
-      run: |
-        echo "$SSH_PRIVATE_KEY" > key.pem
-        chmod 600 key.pem
-        mkdir -p ~/.ssh
-        ssh-keyscan -H "$SSH_HOST" >> ~/.ssh/known_hosts
-      env:
-        SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
-        SSH_HOST: ${{ secrets.SSH_HOST }}
+      - name: 🔑 Set up SSH Key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H 178.128.107.59 >> ~/.ssh/known_hosts
 
-    - name: Deploy to Server
-      run: |
-        ssh -i key.pem -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'EOF'
-          cd ~/occ_odoo17_docker_prod
-          git pull origin main
-          docker compose down
-          docker compose build
-          docker compose up -d
-        EOF
+      - name: 📦 SCP to Server
+        uses: appleboy/scp-action@master
+        with:
+          host: 178.128.107.59
+          username: root
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          source: "."
+          target: "/root/occ_odoo17_docker"
+
+      - name: 🔁 SSH Deploy Script
+        uses: appleboy/ssh-action@master
+        with:
+          host: 178.128.107.59
+          username: root
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            cd /root/occ_odoo17_docker
+            docker-compose down
+            docker-compose up -d --build
