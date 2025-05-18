@@ -27,7 +27,7 @@ jobs:
           username: root
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           source: "."
-          target: "/root/occ_odoo17_docker"
+          target: "/root/occ_odoo17_docker_prod"
 
       - name: 🔁 SSH Deploy Script
         uses: appleboy/ssh-action@master
@@ -36,6 +36,6 @@ jobs:
           username: root
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            cd /root/occ_odoo17_docker
+            cd /root/occ_odoo17_docker_prod
             docker-compose down
             docker-compose up -d --build
