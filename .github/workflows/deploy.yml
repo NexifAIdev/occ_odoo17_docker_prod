@@ -1,91 +1,41 @@
-# ========================================
-# CI/CD: Auto-deploy to DigitalOcean via SSH and Docker Compose
-# Triggered on push to main branch
-# ========================================
-
-name: CI/CD Deploy to DigitalOcean
+name: CI/CD Deploy to Cloud
 
 on:
   push:
     branches:
-      - main  # Trigger only when changes are pushed to the main branch
+      - main
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
     steps:
-      # -----------------------------------
-      # Step 1: Checkout latest code
-      # -----------------------------------
       - name: 📥 Checkout source code
         uses: actions/checkout@v3
 
-      # -----------------------------------
-      # Step 2: Detect what files changed
-      # Sets environment variables:
-      #   - docker_changed=true/false
-      #   - custom_addons_changed=true/false
-      # -----------------------------------
-      - name: 🔎 Determine changed files
-        id: changes
+      - name: 🔑 Set up SSH Key
         run: |
-          # Check for Docker-related changes (docker-compose, Dockerfile, tomcat config)
-          DOCKER_CHANGED=$(git diff --name-only HEAD~1 HEAD | grep -E "docker-compose\.yml|Dockerfile|tomcat/" || true)
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H 178.128.107.59 >> ~/.ssh/known_hosts
 
-          # Check for changes in custom addons
-          CUSTOM_ADDONS_CHANGED=$(git diff --name-only HEAD~1 HEAD | grep -E "odoo/addons/custom" || true)
-
-          # Set GitHub Actions environment variables
-          echo "docker_changed=${DOCKER_CHANGED:+true}" >> $GITHUB_ENV
-          echo "custom_addons_changed=${CUSTOM_ADDONS_CHANGED:+true}" >> $GITHUB_ENV
-
-      # -----------------------------------
-      # Step 3: Copy updated project files to the DigitalOcean server
-      # -----------------------------------
-      - name: 📦 Copy files to DigitalOcean server
+      - name: 📦 SCP to Server
         uses: appleboy/scp-action@master
         with:
-          host: 206.189.239.195
+          host: 178.128.107.59
           username: root
-          key: ${{ secrets.SSH_PRIVATE_KEY }}  # SSH key stored in GitHub secrets
-          source: "."  # Copy all project files
-          target: "/root/occ_odoo17_docker"  # Target directory on server
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          source: "."
+          target: "/root/occ_odoo17_docker"
 
-      # -----------------------------------
-      # Step 4: SSH into server and perform conditional deployment
-      #   - If Docker files changed: full rebuild
-      #   - If only Odoo custom addons changed: update all DBs
-      #   - Else: no action needed
-      # -----------------------------------
-      - name: 🔁 Conditional Deploy on Server
+      - name: 🔁 SSH Deploy Script
         uses: appleboy/ssh-action@master
         with:
-          host: 206.189.239.195
+          host: 178.128.107.59
           username: root
-          key: ${{ secrets.DO_SSH_PRIVATE_KEY }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            echo "📂 Fixing filestore permissions..."
             cd /root/occ_odoo17_docker
-            mkdir -p ./filestore
-            chown -R 1000:1000 ./filestore
-            chmod -R 777 ./filestore
-
-            # Full rebuild if any Docker-related files changed
-            if [ "${{ env.docker_changed }}" = "true" ]; then
-              echo "🚀 Docker-related changes found → Rebuilding all containers..."
-              docker compose down -v
-              docker compose up -d --build
-
-            # Update Odoo DBs if only custom addons changed
-            elif [ "${{ env.custom_addons_changed }}" = "true" ]; then
-              echo "♻️ Custom addons changed → Upgrading all databases..."
-              for db in $(docker exec occ-odoo17-web-prod odoo --list-db); do
-                echo "🔄 Upgrading database: $db"
-                docker exec occ-odoo17-web-prod odoo -d "$db" -u all --stop-after-init || true
-              done
-
-            # No changes that require redeploying
-            else
-              echo "✅ No relevant changes. Deployment skipped."
-            fi
+            docker-compose down
+            docker-compose up -d --build
