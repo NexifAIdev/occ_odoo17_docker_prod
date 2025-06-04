@@ -1,8 +1,10 @@
 # -*- coding: utf-8 -*-
 # Native Python modules
 from datetime import datetime, date, time, timedelta
+from dateutil.parser import parse as date_parse
 
 # Local python modules
+import tempfile, os
 
 # Custom python modules
 import io, base64, pytz, xlsxwriter
@@ -16,6 +18,41 @@ from odoo import models, fields, api, _
 from odoo.tools.translate import _
 from odoo.exceptions import UserError, ValidationError
 
+# Save original reference
+_original_readxl = xl.readxl
+
+def safe_readxl(fn):
+    if hasattr(fn, 'read'):  # If it's a BytesIO or file-like object
+        temp = tempfile.NamedTemporaryFile(delete=False, suffix='.xlsx')
+        temp.write(fn.read())
+        temp.close()
+        try:
+            return _original_readxl(temp.name)
+        finally:
+            os.unlink(temp.name)  # Clean up temp file
+    else:
+        return _original_readxl(fn)
+
+# Patch pylightxl
+xl.readxl = safe_readxl
+
+def parse_excel_date(val):
+    try:
+        return datetime(1899, 12, 30) + timedelta(days=float(val))  # Excel serial date
+    except (ValueError, TypeError):
+        try:
+            return date_parse(str(val).replace(',', '/'))  # Try string parsing
+        except Exception:
+            return None
+
+def parse_excel_time(val):
+    try:
+        return time(int(float(val) * 24), int((float(val) * 24 * 60) % 60))
+    except:
+        try:
+            return datetime.strptime(str(val).strip(), '%H:%M:%S').time()
+        except:
+            return time(0, 0, 0)
 
 class HRImportAttendance(models.Model):
     _name = "hr.import.attendance"
@@ -141,7 +178,7 @@ class HRImportAttendance(models.Model):
         fileobj = base64.b64decode(self.data)
 
         # Step 4: Read Excel File Using `pylightxl`
-        db = xl.readxl(fileobj)
+        db = xl.readxl(io.BytesIO(fileobj))
 
         # Step 5: Get the First Sheet and Read Rows
         sheet_name = db.ws_names[0]  # Get the first sheet name
@@ -170,24 +207,27 @@ class HRImportAttendance(models.Model):
                     python_date_from, python_date_to = None, None
 
                 # Step 7: Search for Employee by Name
-                search_employee_query = """SELECT id FROM hr_employee WHERE name = %s LIMIT 1"""
-                self._cr.execute(search_employee_query, (employee_name,))
-                search_employee_data = self._cr.fetchone()
+                search_employee_user = self.env["res.users"].search([("name", "=", employee_name)], limit=1)
+                search_employee_query = self.env["hr.employee"].search([("user_id", "=", search_employee_user.id)], limit=1)
+                # search_employee_query = """SELECT id FROM hr_employee WHERE name = %s LIMIT 1"""
+                # self._cr.execute(search_employee_query, (employee_name,))
+                # search_employee_data = self._cr.fetchall()
 
-                employee_id = search_employee_data[0] if search_employee_data else False
+                employee_id = search_employee_query.id if search_employee_query else False
 
                 # Step 8: Create Attendance Record
-                self.env["hr.import.attendance.line"].create({
-                    "employee_id": employee_id,
-                    "name": employee_name,
-                    "date_from": python_date.date() if python_date else None,
-                    "hour_from": str(python_date_from.time()) if python_date_from else None,
-                    "date_to": python_date.date() if python_date else None,
-                    "hour_to": str(python_date_to.time()) if python_date_to else None,
-                    "employee_attendance_id": self._origin.id,
-                    "datestamp_from": str(python_date_from) if python_date_from else None,
-                    "datestamp_to": str(python_date_to) if python_date_to else None,
-                })
+                if employee_id:
+                    self.env["hr.import.attendance.line"].create({
+                        "employee_id": employee_id,
+                        "name": employee_name,
+                        "date_from": python_date.date() if python_date else None,
+                        "hour_from": str(python_date_from.time()) if python_date_from else None,
+                        "date_to": python_date.date() if python_date else None,
+                        "hour_to": str(python_date_to.time()) if python_date_to else None,
+                        "employee_attendance_id": self._origin.id,
+                        "datestamp_from": str(python_date_from) if python_date_from else None,
+                        "datestamp_to": str(python_date_to) if python_date_to else None,
+                    })
 
             except Exception as e:
                 pass
@@ -205,7 +245,7 @@ class HRImportAttendance(models.Model):
         fileobj = base64.b64decode(self.data)
 
         # Step 4: Read Excel File Using `pylightxl`
-        db = xl.readxl(fileobj)
+        db = xl.readxl(io.BytesIO(fileobj))
 
         # Step 5: Get the First Sheet and Read Rows
         sheet_name = db.ws_names[0]  # Get the first sheet name
@@ -217,46 +257,38 @@ class HRImportAttendance(models.Model):
                 employee_name = sheet.index(row_idx, 1)
                 date_from_excel = sheet.index(row_idx, 2)
                 date_to_excel = sheet.index(row_idx, 4)
+                print(date_from_excel, date_to_excel)
+                print(sheet.index(row_idx, 3), sheet.index(row_idx, 5))
+                print(employee_name)
 
                 # Convert Excel Serial Date to Python Date
-                try:
-                    date_from = datetime(1899, 12, 30) + timedelta(days=float(date_from_excel))
-                    date_to = datetime(1899, 12, 30) + timedelta(days=float(date_to_excel))
-                except ValueError:
-                    date_from, date_to = None, None
+                date_from = parse_excel_date(date_from_excel)
+                date_to = parse_excel_date(date_to_excel)
 
                 # Extract Hours and Minutes from Time Columns
-                try:
-                    hour_from_sec = int(float(sheet.index(row_idx, 3)) * 24 * 3600)
-                    hour_from = time(hour_from_sec // 3600, (hour_from_sec % 3600) // 60)
-                except:
-                    hour_from = time(0, 0, 0)  # Default to 00:00:00
-
-                try:
-                    hour_to_sec = int(float(sheet.index(row_idx, 5)) * 24 * 3600)
-                    hour_to = time(hour_to_sec // 3600, (hour_to_sec % 3600) // 60)
-                except:
-                    hour_to = time(0, 0, 0)  # Default to 00:00:00
+                hour_from = parse_excel_time(sheet.index(row_idx, 3))
+                hour_to = parse_excel_time(sheet.index(row_idx, 5))
 
                 # Step 7: Search for Employee by Name
                 search_employee_query = """SELECT id FROM hr_employee WHERE name = %s LIMIT 1"""
                 self._cr.execute(search_employee_query, (employee_name,))
-                search_employee_data = self._cr.fetchone()
+                search_employee_data = self._cr.fetchall()
 
                 employee_id = search_employee_data[0] if search_employee_data else False
 
                 # Step 8: Create Attendance Record
-                self.env["hr.import.attendance.line"].create({
-                    "employee_id": employee_id,
-                    "name": employee_name,
-                    "date_from": date_from.date() if date_from else None,
-                    "hour_from": str(hour_from),
-                    "date_to": date_to.date() if date_to else None,
-                    "hour_to": str(hour_to),
-                    "employee_attendance_id": self._origin.id,
-                    "datestamp_from": f"{date_from.date()} {hour_from}" if date_from else None,
-                    "datestamp_to": f"{date_to.date()} {hour_to}" if date_to else None,
-                })
+                if employee_id:
+                    self.env["hr.import.attendance.line"].create({
+                        "employee_id": employee_id,
+                        "name": employee_name,
+                        "date_from": date_from.date() if date_from else None,
+                        "hour_from": str(hour_from),
+                        "date_to": date_to.date() if date_to else None,
+                        "hour_to": str(hour_to),
+                        "employee_attendance_id": self._origin.id,
+                        "datestamp_from": f"{date_from.date()} {hour_from}" if date_from else None,
+                        "datestamp_to": f"{date_to.date()} {hour_to}" if date_to else None,
+                    })
 
             except Exception as e:
                 pass
