@@ -28,5 +28,5 @@ class HRImportAttendanceLine(models.Model):
     datestamp_to = fields.Char(string="Datestamp (To)")
 
     employee_attendance_id = fields.Many2one(
-        "import.employee.attendance", string="Employee Attendance", copy=False
+        "hr.import.attendance", string="Employee Attendance", copy=False
     )

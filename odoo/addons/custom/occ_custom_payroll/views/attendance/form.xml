@@ -34,14 +34,14 @@
 						<button name="validate_button" 
 							string="Validate" 
 							type="object" 
-							invisible="state == 'upload'" 
+							invisible="state != 'upload'" 
 							class="oe_highlight" 
 							groups="occ_custom_payroll.import_attendance_groups_manager"
 							/>
 						<button name="cancel_button" 
 							string="Cancel" 
 							type="object" 
-							invisible="state == 'upload'" 
+							invisible="state != 'upload'" 
 							class="oe_highlight"
 							/>
 
